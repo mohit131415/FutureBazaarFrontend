@@ -1,7 +1,9 @@
 // Client-side API utilities
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
+
 // Helper function for API requests
-async function fetchWithAuth(url, options = {}) {
+async function fetchWithAuth(endpoint, options = {}) {
   const token = localStorage.getItem("adminToken")
 
   const headers = {
@@ -13,7 +15,7 @@ async function fetchWithAuth(url, options = {}) {
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
   })
@@ -44,7 +46,7 @@ export async function fetchMarkets(page = 1, limit = 20, search = "", category =
       queryParams.append("category", category)
     }
 
-    const response = await fetch(`/api/markets?${queryParams}`)
+    const response = await fetchWithAuth(`/api/markets?${queryParams}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch markets")
@@ -59,7 +61,7 @@ export async function fetchMarkets(page = 1, limit = 20, search = "", category =
 
 export async function fetchMarket(id) {
   try {
-    const response = await fetch(`/api/markets/${id}`)
+    const response = await fetchWithAuth(`/api/markets/${id}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch market")
@@ -74,12 +76,8 @@ export async function fetchMarket(id) {
 
 export async function createMarket(marketData) {
   try {
-    // No auth needed for public market creation
-    const response = await fetch("/api/markets", {
+    const response = await fetchWithAuth("/api/markets", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(marketData),
     })
 
@@ -97,12 +95,8 @@ export async function createMarket(marketData) {
 
 export async function placeBet(betData) {
   try {
-    // No auth needed for placing bets
-    const response = await fetch("/api/bets", {
+    const response = await fetchWithAuth("/api/bets", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(betData),
     })
 
@@ -117,4 +111,3 @@ export async function placeBet(betData) {
     throw error
   }
 }
-
