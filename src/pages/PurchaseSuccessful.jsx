@@ -85,7 +85,7 @@ export default function PurchaseSuccessful() {
               <p className="text-sm text-muted-foreground">{plan.description}</p>
             </div>
             <div className="text-right">
-              <div className="font-bold">₹{plan.price.monthly}/mo</div>
+              <div className="font-bold">${plan.price.monthly}/mo</div>
               {plan.price.monthly > 0 && (
                 <div className="text-xs text-green-600">Save 16% with yearly billing</div>
               )}

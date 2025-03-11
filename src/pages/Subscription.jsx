@@ -20,7 +20,7 @@ export default function Subscription() {
       price: { monthly: 0, yearly: 0 },
       features: [
         { name: "Access to all markets", included: true },
-        { name: "Standard transaction fee (₹20 per trade)", included: true },
+        { name: "Standard transaction fee ($20 per trade)", included: true },
         { name: "Basic market analytics", included: true },
         { name: "Community forum access", included: true },
         { name: "Expert predictions", included: false },
@@ -38,7 +38,7 @@ export default function Subscription() {
       price: { monthly: 199, yearly: 1999 },
       features: [
         { name: "Access to all markets", included: true },
-        { name: "Reduced transaction fee (₹10 per trade)", included: true },
+        { name: "Reduced transaction fee ($10 per trade)", included: true },
         { name: "Basic market analytics", included: true },
         { name: "Community forum access", included: true },
         { name: "Weekly expert predictions", included: true },
@@ -136,7 +136,7 @@ export default function Subscription() {
               <CardDescription>{plan.description}</CardDescription>
               <div className="mt-4">
                 <div className="flex items-baseline">
-                  <span className="text-3xl font-bold">₹{plan.price[billingCycle]}</span>
+                  <span className="text-3xl font-bold">${plan.price[billingCycle]}</span>
                   {plan.price[billingCycle] > 0 && (
                     <span className="text-muted-foreground ml-2">/{billingCycle === "monthly" ? "month" : "year"}</span>
                   )}
@@ -194,8 +194,8 @@ export default function Subscription() {
             <tbody>
               <tr className="border-b">
                 <td className="py-4 px-6 font-medium">Transaction Fee</td>
-                <td className="text-center py-4 px-6">₹20 per trade</td>
-                <td className="text-center py-4 px-6">₹10 per trade</td>
+                <td className="text-center py-4 px-6">$20 per trade</td>
+                <td className="text-center py-4 px-6">$10 per trade</td>
                 <td className="text-center py-4 px-6">No fees</td>
               </tr>
               <tr className="border-b">
