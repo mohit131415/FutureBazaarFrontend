@@ -1,7 +1,6 @@
 "use client"
 
 import React from "react"
-
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Search, Filter, ArrowLeft } from 'lucide-react'
@@ -22,30 +21,49 @@ export default function AllMarkets() {
   const [status, setStatus] = useState("all")
   const [filteredMarkets, setFilteredMarkets] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(9)
+  const [itemsPerPage] = useState(9)
   const [totalPages, setTotalPages] = useState(1)
 
+  // Fetch markets when filters or pagination changes
   useEffect(() => {
     const getMarkets = async () => {
       try {
         setIsLoading(true);
+        // Pass the current page to the API
         const data = await fetchMarkets(currentPage, itemsPerPage, searchTerm, category);
-        setMarkets(data.markets || []);
-        setTotalPages(data.totalPages || 1);
+        
+        // Check if we have markets and set them
+        if (data && data.markets) {
+          setMarkets(data.markets);
+          // Calculate total pages if not provided by API
+          setTotalPages(data.totalPages || Math.ceil(data.total / itemsPerPage) || 1);
+        } else {
+          setMarkets([]);
+          setTotalPages(1);
+        }
       } catch (error) {
         console.error("Error fetching markets:", error);
+        setMarkets([]);
+        setTotalPages(1);
       } finally {
         setIsLoading(false);
       }
     };
 
     getMarkets();
-  }, [currentPage, itemsPerPage, searchTerm, category]);
+  }, [currentPage, itemsPerPage, searchTerm, category, status]);
 
   // Apply filters and sorting
   useEffect(() => {
-    // Apply sorting only (filtering is now done on the server)
+    // Apply status filter and sorting
     let result = [...markets];
+
+    // Filter by status if not "all"
+    if (status !== "all") {
+      result = result.filter(market => 
+        status === "active" ? !market.isResolved : market.isResolved
+      );
+    }
 
     // Sort markets
     if (sortBy === "newest") {
@@ -54,8 +72,13 @@ export default function AllMarkets() {
       result = [...result].reverse();
     } else if (sortBy === "highestVolume") {
       result = [...result].sort((a, b) => {
-        const volumeA = Number.parseFloat(a.volume.replace(/[^0-9.]/g, ""));
-        const volumeB = Number.parseFloat(b.volume.replace(/[^0-9.]/g, ""));
+        // Handle different volume formats
+        const volumeA = typeof a.volume === 'string' 
+          ? Number.parseFloat(a.volume.replace(/[^0-9.]/g, ""))
+          : a.volume;
+        const volumeB = typeof b.volume === 'string'
+          ? Number.parseFloat(b.volume.replace(/[^0-9.]/g, ""))
+          : b.volume;
         return volumeB - volumeA;
       });
     } else if (sortBy === "highestProbability") {
@@ -63,15 +86,7 @@ export default function AllMarkets() {
     }
 
     setFilteredMarkets(result);
-  }, [markets, sortBy]);
-
-  // Get current page items
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = filteredMarkets.slice(indexOfFirstItem, indexOfLastItem)
-
-  // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber)
+  }, [markets, sortBy, status]);
 
   // Categories for filter
   const categories = [
@@ -190,7 +205,7 @@ export default function AllMarkets() {
         ) : filteredMarkets.length > 0 ? (
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {currentItems.map((market) => (
+              {filteredMarkets.map((market) => (
                 <MarketCard
                   key={market._id}
                   id={market._id}
@@ -211,7 +226,7 @@ export default function AllMarkets() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => paginate(Math.max(1, currentPage - 1))}
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                   >
                     Previous
@@ -228,7 +243,7 @@ export default function AllMarkets() {
                         <Button
                           variant={currentPage === page ? "default" : "outline"}
                           size="sm"
-                          onClick={() => paginate(page)}
+                          onClick={() => setCurrentPage(page)}
                           className={currentPage === page ? "bg-primary" : ""}
                         >
                           {page}
@@ -239,7 +254,7 @@ export default function AllMarkets() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                   >
                     Next
@@ -258,4 +273,3 @@ export default function AllMarkets() {
     </div>
   )
 }
-

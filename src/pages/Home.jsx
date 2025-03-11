@@ -44,7 +44,7 @@ export default function Home() {
                 Buy and sell shares on real-world events and earn profits when your predictions are right.
               </p>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link to="#markets" className="animated-gradient-button">
+                <Link to="/markets" className="animated-gradient-button">
                   <span>Explore Markets</span>
                 </Link>
                 <Link

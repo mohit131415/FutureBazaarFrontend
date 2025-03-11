@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
-import { ArrowLeft, Share2, Bell, TrendingUp, Clock, Users, Info } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
+import { ArrowLeft, Share2, Bell, TrendingUp, Clock, Users, Info, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Button } from "./ui/button"
@@ -10,12 +10,31 @@ import { Progress } from "./ui/progress"
 import { Separator } from "./ui/separator"
 import { useToast } from "../hooks/use-toast"
 import { placeBet } from "../lib/api"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
 
 export default function MarketDetail({ marketId, market }) {
+  const navigate = useNavigate()
   const [selectedOption, setSelectedOption] = useState("yes")
   const [quantity, setQuantity] = useState(10)
   const [isPlacingBet, setIsPlacingBet] = useState(false)
+  const [chartTimeframe, setChartTimeframe] = useState("1m")
+  const [showAdvancedCharts, setShowAdvancedCharts] = useState(false)
   const { toast } = useToast()
 
   const handlePlaceBet = async () => {
@@ -36,9 +55,18 @@ export default function MarketDetail({ marketId, market }) {
 
       await placeBet(bet)
 
-      toast({
-        title: "Bet placed successfully!",
-        description: `You placed a bet of ${quantity} shares on ${selectedOption.toUpperCase()}`,
+      // Navigate to the bet confirmation page with bet details
+      navigate("/bet-confirmation", {
+        state: {
+          bet,
+          market: {
+            id: market._id,
+            title: market.title,
+            probability: market.probability,
+            endDate: market.endDate,
+            category: market.category,
+          },
+        },
       })
     } catch (error) {
       console.error("Error placing bet:", error)
@@ -47,46 +75,72 @@ export default function MarketDetail({ marketId, market }) {
         description: "There was an error placing your bet. Please try again.",
         variant: "destructive",
       })
-    } finally {
       setIsPlacingBet(false)
     }
   }
 
-  const priceData = market.priceHistory || [
-    { date: "Apr 1", yes: 0.65, no: 0.35 },
-    { date: "Apr 8", yes: 0.62, no: 0.38 },
-    { date: "Apr 15", yes: 0.58, no: 0.42 },
-    { date: "Apr 22", yes: 0.61, no: 0.39 },
-    { date: "Apr 29", yes: 0.63, no: 0.37 },
-    { date: "May 6", yes: 0.67, no: 0.33 },
-    { date: "May 13", yes: 0.64, no: 0.36 },
-    { date: "May 20", yes: 0.62, no: 0.38 },
-    { date: "May 27", yes: 0.65, no: 0.35 },
-    { date: "Jun 3", yes: 0.68, no: 0.32 },
-    { date: "Jun 10", yes: 0.72, no: 0.28 },
-    { date: "Jun 17", yes: 0.7, no: 0.3 },
-    { date: "Jun 24", yes: 0.67, no: 0.33 },
-    { date: "Jul 1", yes: 0.65, no: 0.35 },
-    { date: "Jul 8", yes: market.probability / 100, no: (100 - market.probability) / 100 },
+  // Generate more detailed price data
+  const generateDetailedPriceData = (timeframe) => {
+    // This would normally come from an API with historical data
+    // For now, we'll generate synthetic data based on the timeframe
+    const baseData = market.priceHistory || []
+
+    // If we have real data, use it
+    if (baseData.length > 0) return baseData
+
+    // Otherwise generate synthetic data
+    const dataPoints = timeframe === "1w" ? 7 : timeframe === "1m" ? 30 : timeframe === "3m" ? 90 : 180
+    const result = []
+
+    let yesPrice = market.probability / 100
+    let noPrice = 1 - yesPrice
+
+    for (let i = 0; i < dataPoints; i++) {
+      // Create some random fluctuations
+      const change = (Math.random() - 0.5) * 0.03
+      yesPrice = Math.max(0.01, Math.min(0.99, yesPrice + change))
+      noPrice = 1 - yesPrice
+
+      const date = new Date()
+      date.setDate(date.getDate() - (dataPoints - i))
+
+      result.push({
+        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        yes: yesPrice,
+        no: noPrice,
+        volume: Math.floor(Math.random() * 50000) + 10000,
+      })
+    }
+
+    return result
+  }
+
+  const priceData = generateDetailedPriceData(chartTimeframe)
+
+  // Generate volume data
+  const volumeData =
+    market.volumeHistory ||
+    priceData.map((item) => ({
+      date: item.date,
+      volume: item.volume || Math.floor(Math.random() * 50000) + 10000,
+    }))
+
+  // Generate trader activity data
+  const traderActivityData = [
+    { name: "Yes Traders", value: Math.floor(market.traders * 0.6) || 60 },
+    { name: "No Traders", value: Math.floor(market.traders * 0.4) || 40 },
   ]
 
-  const volumeData = market.volumeHistory || [
-    { date: "Apr 1", volume: 120000 },
-    { date: "Apr 8", volume: 180000 },
-    { date: "Apr 15", volume: 150000 },
-    { date: "Apr 22", volume: 220000 },
-    { date: "Apr 29", volume: 190000 },
-    { date: "May 6", volume: 250000 },
-    { date: "May 13", volume: 310000 },
-    { date: "May 20", volume: 280000 },
-    { date: "May 27", volume: 350000 },
-    { date: "Jun 3", volume: 420000 },
-    { date: "Jun 10", volume: 380000 },
-    { date: "Jun 17", volume: 450000 },
-    { date: "Jun 24", volume: 520000 },
-    { date: "Jul 1", volume: 480000 },
-    { date: "Jul 8", volume: Number.parseInt(market.volume.replace(/[^0-9]/g, "")) * 1000 },
+  // Generate price distribution data
+  const priceDistributionData = [
+    { price: "0-20%", count: 5 },
+    { price: "21-40%", count: 12 },
+    { price: "41-60%", count: 25 },
+    { price: "61-80%", count: 18 },
+    { price: "81-100%", count: 8 },
   ]
+
+  const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
 
   return (
     <div className="container py-6">
@@ -128,8 +182,46 @@ export default function MarketDetail({ marketId, market }) {
         <div className="md:col-span-2">
           <Card className="border border-border/50 overflow-hidden">
             <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-secondary/5">
-              <CardTitle>Price History</CardTitle>
-              <CardDescription>Historical price movement for Yes and No shares</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Price History</CardTitle>
+                  <CardDescription>Historical price movement for Yes and No shares</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={chartTimeframe === "1w" ? "bg-primary/10" : ""}
+                    onClick={() => setChartTimeframe("1w")}
+                  >
+                    1W
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={chartTimeframe === "1m" ? "bg-primary/10" : ""}
+                    onClick={() => setChartTimeframe("1m")}
+                  >
+                    1M
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={chartTimeframe === "3m" ? "bg-primary/10" : ""}
+                    onClick={() => setChartTimeframe("3m")}
+                  >
+                    3M
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={chartTimeframe === "6m" ? "bg-primary/10" : ""}
+                    onClick={() => setChartTimeframe("6m")}
+                  >
+                    6M
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="price">
@@ -144,8 +236,9 @@ export default function MarketDetail({ marketId, market }) {
                       <XAxis dataKey="date" />
                       <YAxis domain={[0, 1]} tickFormatter={(value) => `$${value.toFixed(2)}`} />
                       <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, "Price"]} />
-                      <Line type="monotone" dataKey="yes" stroke="#3b82f6" name="Yes" />
-                      <Line type="monotone" dataKey="no" stroke="#ef4444" name="No" />
+                      <Legend />
+                      <Line type="monotone" dataKey="yes" stroke="#3b82f6" name="Yes" strokeWidth={2} />
+                      <Line type="monotone" dataKey="no" stroke="#ef4444" name="No" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </TabsContent>
@@ -163,6 +256,73 @@ export default function MarketDetail({ marketId, market }) {
               </Tabs>
             </CardContent>
           </Card>
+
+          <div className="mt-6 flex items-center justify-between">
+            <h2 className="text-xl font-bold">Advanced Analytics</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdvancedCharts(!showAdvancedCharts)}
+              className="flex items-center gap-1"
+            >
+              {showAdvancedCharts ? "Hide" : "Show"}
+              {showAdvancedCharts ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {showAdvancedCharts && (
+            <div className="grid gap-6 mt-4 md:grid-cols-2">
+              <Card className="border border-border/50 overflow-hidden">
+                <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-secondary/5">
+                  <CardTitle className="text-base">Trader Distribution</CardTitle>
+                  <CardDescription>Breakdown of Yes vs No traders</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[250px] flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={traderActivityData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {traderActivityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} traders`, ""]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-border/50 overflow-hidden">
+                <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-secondary/5">
+                  <CardTitle className="text-base">Price Distribution</CardTitle>
+                  <CardDescription>Historical price range frequency</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={priceDistributionData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="price" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`${value} trades`, "Count"]} />
+                      <Bar dataKey="count" fill="#8884d8">
+                        {priceDistributionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <Card className="mt-6 border border-border/50 overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5">
@@ -231,8 +391,7 @@ export default function MarketDetail({ marketId, market }) {
                 </div>
                 <Progress
                   value={market.probability}
-                  className="h-2"
-                  indicatorClassName="bg-gradient-to-r from-primary to-secondary"
+                  className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-secondary"
                 />
                 <div className="grid grid-cols-2 gap-2 text-center text-sm">
                   <div className="rounded-md bg-muted p-2">
@@ -339,4 +498,3 @@ export default function MarketDetail({ marketId, market }) {
     </div>
   )
 }
-

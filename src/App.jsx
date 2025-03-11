@@ -7,9 +7,14 @@ import AdminLogin from "./pages/admin/login"
 import AdminDashboard from "./pages/admin/dashboard"
 import MarketForm from "./pages/admin/market-form"
 import { Layout } from "./components/layout"
+// Make sure the import is correct
 import { Toaster } from "./components/ui/toaster"
+
+// If you're using the new implementation, update to:
+// import { Toaster } from "./components/ui/use-toast"
 import AllMarkets from "./pages/AllMarkets"
 import PurchaseSuccessful from "./pages/PurchaseSuccessful"
+import BetConfirmation from "./pages/BetConfirmation"
 
 function App() {
   return (
@@ -64,6 +69,14 @@ function App() {
             </Layout>
           }
         />
+        <Route
+          path="/bet-confirmation"
+          element={
+            <Layout>
+              <BetConfirmation />
+            </Layout>
+          }
+        />
 
         {/* Admin routes without layout */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -77,3 +90,4 @@ function App() {
 }
 
 export default App
+
